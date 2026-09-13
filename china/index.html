@@ -273,8 +273,11 @@
   .zodiac-chip .zsub{ display:block; font-size: 10.5px; color: var(--muted); margin-top: 2px; }
 
   /* ---- Chinese tear-off calendar card ---- */
+  .lunar-card-wrap{
+    max-width: 320px; margin: 22px auto 0;
+  }
   .lunar-card{
-    margin-top: 20px; border: 1px solid var(--line); border-radius: 14px;
+    border: 1px solid var(--line); border-radius: 14px;
     overflow: hidden; background: var(--ink-2);
   }
   .lc-head{
@@ -291,6 +294,10 @@
   }
   .lc-meta{
     text-align: center; margin-top: 8px; font-size: 12.5px; color: var(--paper);
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  .lc-era{
+    text-align: center; margin-top: 4px; font-size: 11px; color: var(--muted);
     font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
   }
   .lc-divider{ height: 1px; background: var(--line); margin: 14px 14px 0; }
@@ -355,6 +362,8 @@
       <div id="moonOutput"></div>
     </div>
   </div>
+
+  <div class="lunar-card-wrap" id="lunarCardWrap"></div>
 
   <div class="extra">
     <div class="extra-head">
@@ -525,6 +534,7 @@ function getLunar(year, month, date) {
                 lunarDate: delta + 1,
                 isLeap,
                 lunarYear: `${heavenlyStemStr[row.heavenlyStem]}${earthlyBranchStr[row.earthlyBranch]}年`,
+                lunarYearNum: index + 1900,
                 zodiac: `${zodiacStr[row.earthlyBranch]}`,
                 dateStr: getLunarStr(lunarMonth, delta + 1, isLeap)
             };
@@ -626,6 +636,8 @@ const I18N = {
     lunarCardLabel: 'CALENDÁRIO CHINÊS',
     yiGloss: 'favorável',
     jiGloss: 'evitar',
+    continuousYear: (n) => `Ano ${n} da era contínua chinesa (calendário do Imperador Amarelo)`,
+    continuousYearShort: (n) => `Ano chinês ${n}`,
     weekdays: ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'],
     months: ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'],
     dateFmt: (d, monthName, y) => `${d} de ${monthName} de ${y}`,
@@ -688,6 +700,8 @@ const I18N = {
     lunarCardLabel: 'CHINESE CALENDAR',
     yiGloss: 'favorable',
     jiGloss: 'avoid',
+    continuousYear: (n) => `Year ${n} of the continuous Chinese era (Yellow Emperor calendar)`,
+    continuousYearShort: (n) => `Chinese year ${n}`,
     weekdays: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
     months: ['January','February','March','April','May','June','July','August','September','October','November','December'],
     dateFmt: (d, monthName, y) => `${monthName} ${d}, ${y}`,
@@ -750,6 +764,8 @@ const I18N = {
     lunarCardLabel: '农历',
     yiGloss: '',
     jiGloss: '',
+    continuousYear: (n) => `黄帝纪年${n}年`,
+    continuousYearShort: (n) => `黄帝纪年${n}年`,
     weekdays: ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'],
     months: ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'],
     dateFmt: (d, monthName, y) => `${y}年${monthName}${d}日`,
@@ -880,9 +896,14 @@ function lunarCardMetaLine(month, isLeap, gz){
   return `${L.lunarMonthDay(month, isLeap)} · ${L.yearOf(gz.full)}`;
 }
 
-function tearOffCalendarCard(month, day, isLeap, gz, gregorianText, weekday){
+function continuousYearNum(lunarYearNum){
+  return lunarYearNum + 2697;
+}
+
+function tearOffCalendarCard(month, day, isLeap, gz, gregorianText, weekday, lunarYearNum){
   const yiGloss = L.yiGloss ? `<span class="lc-tag-gloss">(${L.yiGloss})</span>` : '';
   const jiGloss = L.jiGloss ? `<span class="lc-tag-gloss">(${L.jiGloss})</span>` : '';
+  const eraLine = `<div class="lc-era">${L.continuousYearShort(continuousYearNum(lunarYearNum))}</div>`;
   return `
     <div class="lunar-card">
       <div class="lc-head">
@@ -891,6 +912,7 @@ function tearOffCalendarCard(month, day, isLeap, gz, gregorianText, weekday){
       </div>
       <div class="lc-day">${lunarDayGlyph(day)}</div>
       <div class="lc-meta">${lunarCardMetaLine(month, isLeap, gz)}</div>
+      ${eraLine}
       <div class="lc-divider"></div>
       <div class="lc-tags">
         <div class="lc-tag-col lc-yi">
@@ -1076,10 +1098,12 @@ function computeGtoC(){
       ${sub}
       <div class="zodiac-row"><span class="zodiac-badge">${L.yearOf(gz.full)}</span></div>
       ${ganzhiNote}
-      ${tearOffCalendarCard(lunar.lunarMonth, lunar.lunarDate, lunar.isLeap, gz, g.text, g.weekday)}
     `;
+    document.getElementById('lunarCardWrap').innerHTML =
+      tearOffCalendarCard(lunar.lunarMonth, lunar.lunarDate, lunar.isLeap, gz, g.text, g.weekday, lunar.lunarYearNum);
   }catch(e){
     moonOutput.innerHTML = `<div class="error-msg">${translateError(e)}</div>`;
+    document.getElementById('lunarCardWrap').innerHTML = '';
   }
 }
 
@@ -1108,9 +1132,11 @@ function computeCtoG(){
       <div class="result-big">${g.text}</div>
       <div class="result-sub"><span class="weekday">${g.weekday}</span></div>
     `;
-    moonOutput.innerHTML += tearOffCalendarCard(month, day, isLeap, gz, g.text, g.weekday);
+    document.getElementById('lunarCardWrap').innerHTML =
+      tearOffCalendarCard(month, day, isLeap, gz, g.text, g.weekday, year);
   }catch(e){
     sunOutput.innerHTML = `<div class="error-msg">${translateError(e)}</div>`;
+    document.getElementById('lunarCardWrap').innerHTML = '';
   }
 }
 
