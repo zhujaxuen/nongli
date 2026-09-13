@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dois Calendários</title>
+<style>
+  :root{
+    --ink: #12182B;
+    --ink-2: #182140;
+    --panel-sun: #1B2440;
+    --panel-moon: #241A28;
+    --sun: #D8A947;
+    --sun-dim: #8a742f;
+    --moon: #B23A48;
+    --moon-dim: #7a2b34;
+    --jade: #4F8A7A;
+    --paper: #F1E9D9;
+    --muted: #9AA3BD;
+    --line: rgba(241,233,217,0.12);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: radial-gradient(1200px 600px at 20% -10%, #1c2547 0%, var(--ink) 45%) fixed;
+    color: var(--paper);
+    font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
+    min-height: 100vh;
+    padding: 32px 18px 60px;
+  }
+  .wrap{ max-width: 920px; margin: 0 auto; }
+
+  header{ text-align:center; margin-bottom: 34px; }
+  header .eyebrow{
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 12.5px; letter-spacing: 0.14em; color: var(--muted);
+    margin-bottom: 10px; text-transform: none;
+  }
+  header h1{
+    font-size: 34px; margin: 0 0 10px; font-weight: 400;
+    letter-spacing: 0.01em;
+  }
+  header h1 .sol{ color: var(--sun); }
+  header h1 .lua{ color: var(--moon); }
+  header p{
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    color: var(--muted); font-size: 14.5px; max-width: 540px; margin: 0 auto; line-height:1.6;
+  }
+
+  /* ---- today strip ---- */
+  .today-strip{
+    display:flex; align-items:center; justify-content:center; gap:18px;
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 13.5px; color: var(--muted);
+    border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    padding: 12px 0; margin-bottom: 34px; flex-wrap: wrap;
+  }
+  .today-strip b{ color: var(--paper); font-weight: 600; }
+  .today-strip .sep{ color: var(--line); }
+
+  /* ---- mode toggle ---- */
+  .mode-toggle{
+    display:flex; justify-content:center; gap: 8px; margin-bottom: 26px;
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  .mode-toggle button{
+    background: transparent; border: 1px solid var(--line); color: var(--muted);
+    padding: 9px 18px; border-radius: 999px; font-size: 13px; cursor: pointer;
+    transition: all .18s ease;
+  }
+  .mode-toggle button.active{
+    border-color: var(--sun); color: var(--ink); background: var(--sun);
+    font-weight: 600;
+  }
+  .mode-toggle button:not(.active):hover{ border-color: var(--paper); color: var(--paper); }
+
+  /* ---- two panel grid ---- */
+  .stage{
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 64px 1fr;
+    align-items: stretch;
+    gap: 0;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  @media (max-width: 640px){
+    .stage{ grid-template-columns: 1fr; }
+    .connector{ display:none; }
+  }
+
+  .panel{ padding: 30px 26px; }
+  .panel-sun{ background: linear-gradient(160deg, var(--panel-sun), #141b34); }
+  .panel-moon{ background: linear-gradient(200deg, var(--panel-moon), #1a1320); }
+
+  .panel-label{
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 11.5px; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 18px;
+  }
+  .panel-sun .panel-label{ color: var(--sun); }
+  .panel-moon .panel-label{ color: var(--moon); }
+
+  .connector{
+    background: var(--ink-2); display:flex; align-items:center; justify-content:center;
+    border-left: 1px solid var(--line); border-right: 1px solid var(--line);
+    font-size: 20px; color: var(--muted);
+  }
+
+  label{
+    display:block; font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 12px; color: var(--muted); margin: 14px 0 6px;
+  }
+  label:first-of-type{ margin-top: 0; }
+
+  input[type="date"], select{
+    width: 100%; background: rgba(241,233,217,0.06); border: 1px solid var(--line);
+    color: var(--paper); padding: 10px 12px; border-radius: 8px; font-size: 15px;
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  input[type="date"]{ color-scheme: dark; }
+  select:disabled{ opacity: 0.35; }
+
+  .checkbox-row{
+    display:flex; align-items:center; gap: 8px; margin-top: 14px;
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 13px; color: var(--muted);
+  }
+  .checkbox-row input{ accent-color: var(--moon); }
+
+  .result-big{ font-size: 26px; line-height: 1.35; margin: 4px 0 6px; }
+  .result-sub{
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 13.5px; color: var(--muted); line-height: 1.6;
+  }
+  .weekday{ color: var(--sun); }
+  .zodiac-row{ display:flex; align-items:baseline; gap: 10px; margin-top: 14px; }
+  .zodiac-badge{
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 12px; border: 1px solid var(--moon-dim); color: var(--moon);
+    padding: 4px 10px; border-radius: 999px; letter-spacing: 0.03em;
+  }
+  .ganzhi-note{
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 12px; color: var(--muted); margin-top: 4px;
+  }
+
+  .error-msg{
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 13px; color: var(--moon); margin-top: 14px; line-height: 1.5;
+  }
+
+  footer{
+    text-align:center; margin-top: 30px;
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 11.5px; color: var(--muted); opacity: 0.7; line-height: 1.7;
+  }
+
+  /* ---- extra sections ---- */
+  .extra{ margin-top: 64px; }
+  .extra-head{
+    display:flex; align-items:baseline; justify-content: space-between; gap: 16px;
+    flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .extra h2{
+    font-size: 22px; font-weight: 400; margin: 0; letter-spacing: 0.01em;
+  }
+  .extra h2 .dot{ color: var(--sun); }
+  .extra p.lead{
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 13.5px; color: var(--muted); line-height: 1.6; margin: 0 0 22px;
+    max-width: 620px;
+  }
+  .year-pick{
+    display:flex; align-items:center; gap: 8px;
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 12.5px; color: var(--muted);
+  }
+  .year-pick select{
+    width: auto; padding: 6px 10px; font-size: 13px;
+  }
+
+  .festival-grid{
+    display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .festival-card{
+    background: rgba(241,233,217,0.04); border: 1px solid var(--line);
+    border-radius: 12px; padding: 16px 18px; border-left: 3px solid var(--moon-dim);
+  }
+  .festival-card .fname{
+    font-size: 16.5px; margin-bottom: 6px;
+  }
+  .festival-card .flunar{
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 12px; color: var(--moon); margin-bottom: 4px;
+  }
+  .festival-card .fdate{
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 13.5px; color: var(--paper); font-weight: 600;
+  }
+  .festival-card .fnote{
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 12.5px; color: var(--muted); margin-top: 8px; line-height: 1.5;
+  }
+
+  .curio-grid{
+    display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+  }
+  .curio-card{
+    background: rgba(241,233,217,0.04); border: 1px solid var(--line);
+    border-radius: 12px; padding: 18px 20px; border-left: 3px solid var(--sun-dim);
+  }
+  .curio-card h3{
+    font-size: 16px; margin: 0 0 8px; font-weight: 400; color: var(--sun);
+  }
+  .curio-card p{
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 13px; color: var(--muted); line-height: 1.65; margin: 0;
+  }
+
+  .element-strip{
+    display:flex; flex-wrap: wrap; gap: 10px; margin-top: 8px;
+  }
+  .element-chip{
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 12px; padding: 5px 12px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--paper);
+  }
+
+  .zodiac-strip{
+    display:grid; grid-template-columns: repeat(auto-fit, minmax(90px,1fr));
+    gap: 8px; margin-top: 10px;
+  }
+  .zodiac-chip{
+    text-align:center; font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 12.5px; color: var(--paper); background: rgba(241,233,217,0.04);
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 4px;
+  }
+  .zodiac-chip .zsub{ display:block; font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">CONVERSOR DE CALENDÁRIOS</div>
+    <h1><span class="sol">Sol</span> &amp; <span class="lua">Lua</span></h1>
+    <p>Compare uma data do calendário gregoriano com sua correspondente no calendário chinês lunissolar — em qualquer ano entre 1901 e 2100.</p>
+  </header>
+
+  <div class="today-strip" id="todayStrip"></div>
+
+  <div class="mode-toggle">
+    <button id="modeGtoC" class="active">Gregoriano → Chinês</button>
+    <button id="modeCtoG">Chinês → Gregoriano</button>
+  </div>
+
+  <div class="stage">
+    <!-- SUN / GREGORIAN PANEL -->
+    <div class="panel panel-sun" id="sunPanel">
+      <div class="panel-label">GREGORIANO</div>
+      <div id="sunInputs"></div>
+      <div id="sunOutput"></div>
+    </div>
+
+    <div class="connector">⇄</div>
+
+    <!-- MOON / CHINESE PANEL -->
+    <div class="panel panel-moon" id="moonPanel">
+      <div class="panel-label">CHINÊS (LUNISSOLAR)</div>
+      <div id="moonInputs"></div>
+      <div id="moonOutput"></div>
+    </div>
+  </div>
+
+  <!-- ===== SPECIAL DATES ===== -->
+  <div class="extra">
+    <div class="extra-head">
+      <h2>Datas especiais<span class="dot">.</span></h2>
+      <div class="year-pick">
+        <label for="festYear" style="margin:0;">ano gregoriano</label>
+        <select id="festYear"></select>
+      </div>
+    </div>
+    <p class="lead">Os principais festivais tradicionais chineses seguem o calendário lunar, então sua data no gregoriano muda todo ano. Veja quando caem no ano escolhido acima.</p>
+    <div class="festival-grid" id="festivalGrid"></div>
+  </div>
+
+  <!-- ===== CURIOSITIES ===== -->
+  <div class="extra">
+    <h2>Curiosidades &amp; como funciona<span class="dot">.</span></h2>
+    <p class="lead">Alguns pontos que ajudam a entender por que esse calendário se comporta do jeito que se comporta.</p>
+    <div class="curio-grid">
+
+      <div class="curio-card">
+        <h3>O ciclo sexagenário (60 anos)</h3>
+        <p>Cada ano lunar recebe um nome formado por um dos 10 "troncos celestes" combinado com um dos 12 "ramos terrestres" — como o 己酉 (Ji-You) de 1969. Como 10 e 12 têm mínimo múltiplo comum 60, o mesmo par só se repete a cada 60 anos. É esse ciclo, não só o zodíaco, que os calendários chineses tradicionais usam para nomear os anos.</p>
+      </div>
+
+      <div class="curio-card">
+        <h3>Os 12 animais do zodíaco</h3>
+        <p>O animal do ano vem do ramo terrestre (o segundo caractere do par acima) e se repete a cada 12 anos.</p>
+        <div class="zodiac-strip">
+          <div class="zodiac-chip">Rato<span class="zsub">子</span></div>
+          <div class="zodiac-chip">Boi<span class="zsub">丑</span></div>
+          <div class="zodiac-chip">Tigre<span class="zsub">寅</span></div>
+          <div class="zodiac-chip">Coelho<span class="zsub">卯</span></div>
+          <div class="zodiac-chip">Dragão<span class="zsub">辰</span></div>
+          <div class="zodiac-chip">Serpente<span class="zsub">巳</span></div>
+          <div class="zodiac-chip">Cavalo<span class="zsub">午</span></div>
+          <div class="zodiac-chip">Cabra<span class="zsub">未</span></div>
+          <div class="zodiac-chip">Macaco<span class="zsub">申</span></div>
+          <div class="zodiac-chip">Galo<span class="zsub">酉</span></div>
+          <div class="zodiac-chip">Cachorro<span class="zsub">戌</span></div>
+          <div class="zodiac-chip">Porco<span class="zsub">亥</span></div>
+        </div>
+      </div>
+
+      <div class="curio-card">
+        <h3>Os 5 elementos (Wu Xing)</h3>
+        <p>O tronco celeste também carrega um elemento, e cada elemento dura dois anos seguidos (uma versão "Yang" e uma "Yin"). Por isso 1969 é "Galo de Terra" e não simplesmente "Galo".</p>
+        <div class="element-strip">
+          <span class="element-chip">Madeira 木</span>
+          <span class="element-chip">Fogo 火</span>
+          <span class="element-chip">Terra 土</span>
+          <span class="element-chip">Metal 金</span>
+          <span class="element-chip">Água 水</span>
+        </div>
+      </div>
+
+      <div class="curio-card">
+        <h3>Por que existe o mês intercalar?</h3>
+        <p>12 meses lunares somam cerca de 354 dias — 11 a menos que o ano solar. Sem correção, em poucos anos o Ano Novo Chinês cairia no meio do verão. Para evitar isso, a cada 2 ou 3 anos um mês extra é inserido (o "mês intercalar"), criando um ano de 13 meses que realinha o calendário com as estações.</p>
+      </div>
+
+      <div class="curio-card">
+        <h3>Qual mês vira o intercalar?</h3>
+        <p>Não é sempre o mesmo: o mês extra é o primeiro, dentro daquele ano lunar, que não contém nenhum dos 12 "termos solares principais" (pontos fixos do ano solar, como solstícios e equinócios). Por isso 2017 teve um 6º mês duplicado, 2020 um 4º mês duplicado e 2023 um 2º mês duplicado.</p>
+      </div>
+
+      <div class="curio-card">
+        <h3>Um mês lunar = uma lua</h3>
+        <p>Cada mês começa exatamente na lua nova (calculada para o horário de Pequim) e dura 29 ou 30 dias — nunca 28 ou 31, como no gregoriano. É por isso que a lua está sempre cheia por volta do 15º dia do mês lunar, todo mês.</p>
+      </div>
+
+      <div class="curio-card">
+        <h3>Uso hoje em dia</h3>
+        <p>Desde 1912 a China usa oficialmente o calendário gregoriano para datas civis, negócios e a vida cotidiana. O calendário lunissolar tradicional continua vivo para fixar festivais, feriados, o zodíaco e, em muitas famílias, datas de aniversários e casamentos.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>
+    Conversão baseada em tabela astronômica de novilúnios e meses intercalares (1900–2100).<br>
+    Ano lunar identificado pelo ano gregoriano em que o Ano Novo Chinês daquele ciclo começa.
+  </footer>
+
+</div>
+
+<script>
+/* ===================== CONVERSION CORE ===================== */
+// ---- Chinese Lunisolar <-> Gregorian conversion core (data table covers 1900-2100) ----
+function base64ToBit(base64Str) {
+    const base64CodeMap = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    const result = [];
+    for (let i = 0; i < base64Str.length; i++) {
+        let n = base64CodeMap.indexOf(base64Str[i]);
+        result.push(n.toString(2).padStart(6, '0'));
+    }
+    return result.join('');
+}
+
+function checkDate(year, month, date) {
+    if (year < 1901 || year > 2100) {
+        throw new Error('Invalid Year');
+    }
+    if (month < 1 || month > 12) {
+        throw new Error('Invalid Month');
+    }
+    if (date < 1 || date > 31) {
+        throw new Error('Invalid Date');
+    }
+    if ([4, 6, 9, 11].indexOf(month) != -1 && date > 30) {
+        throw new Error('Invalid Date');
+    }
+    if (month == 2) {
+        if (date > 29) {
+            throw new Error('Invalid Date');
+        } else {
+            let isLeap = false;
+            if (year % 400 == 0) {
+                isLeap = true
+            } else if (year % 4 == 0 && year % 100 != 0) {
+                isLeap = true;
+            }
+            if (!isLeap && date > 28) {
+                throw new Error('Invalid Date');
+            }
+        }
+    }
+}
+
+
+const table = [];
+const heavenlyStemStr = '甲乙丙丁戊己庚辛壬癸';
+const earthlyBranchStr = '子丑寅卯辰巳午未申酉戌亥';
+const zodiacStr = '鼠牛虎兔龙蛇马羊猴鸡狗猪';
+const lunarMonthStr = '正二三四五六七八九十冬腊';
+const nubmerStr = '一二三四五六七八九十';
+
+function decompressData() {
+    const base64Str = 'hLaCVwUrqpNDSYNlUaqgrUE1pJXQSuak2FJoaSrqlC1QNailtBK26TcElwpLWyWDUoNqJW1ArYJVySXgkuzJYNSg6lVtSC1oFbHJuCS58loZKhqU20oLVQVqSq2BLoSWlkrCpV7SoNlBaqqrUE2gpbNSuClcVKg6VBqpq1QVaglslK4KVwUmPpMGyrrVQVqCW1UroJWhSamk0NJY1ShaoFtTS2glbBJtKS4Ul1ZLBqUG1GraBVsEq6pLwSXBks2pQdSw1lBawKtlk2hJcGSyalQ1KDaUlqoK1PVbAl0JLVyVhUqFpSWqgrVlVqCXQUtspXBSsKk0dKg1UFapJtQS2alcFJwaTL0mDVMFqja1BLbaV0ErQpNbSWGkoapLtUC1oFbSStgk29JcKSwqlW1KDaQVtGq2CTeEl4JLgyWzUoOpQaqSrYFVwSXHkuDJZ9SoalBtKq1UFagptRS6ClsVKwqVC0prVQVqgq0lLoKWwUrOpODSbuUwaqCtVU2oJbBSuik4NFo6TBqkG1TNagVtBK5KToUWhoqWyUNUg';
+    const bitStr = base64ToBit(base64Str);
+    let solarDate = { y: 1900, m: 1, d: 31, obj: new Date(Date.UTC(1900, 0, 31)) };
+    let heavenlyStem = 6; // 天干
+    let earthlyBranch = 0; // 地支
+    for (let i = 0; i < bitStr.length; ) {
+        if (i + 16 >= bitStr.length) {
+            break;
+        }
+        const head = bitStr.substr(i, 4);
+        i += 4;
+        const leapMonth = +`0b${head}`;
+        const monthCount = leapMonth > 0 ? 13 : 12;
+        const months = bitStr.substr(i, monthCount).split('').map(o => +o);
+        i += monthCount;
+
+        table.push({
+            solarDate,
+            leapMonth,
+            months,
+            heavenlyStem,
+            earthlyBranch
+        });
+
+        const dateCount = monthCount*29 + months.filter(o => o == 1).length;
+        const newSolarDate = new Date(Date.UTC(solarDate.y, solarDate.m - 1, solarDate.d + dateCount));
+        solarDate = {
+            y: newSolarDate.getUTCFullYear(),
+            m: newSolarDate.getUTCMonth() + 1,
+            d: newSolarDate.getUTCDate(),
+            obj: newSolarDate
+        };
+        heavenlyStem = (heavenlyStem + 1) % 10;
+        earthlyBranch = (earthlyBranch + 1) % 12;
+    }
+}
+
+decompressData();
+
+function isBefore(base, target) {
+    if (base.y != target.y) {
+        return base.y > target.y;
+    } else if (base.m != target.m) {
+        return base.m > target.m;
+    } else if (base.d != target.d) {
+        return base.d > target.d;
+    }
+    return false;
+}
+
+function getLunarStr(month, date, isLeap) {
+    const monthStr = `${isLeap ? '闰' : ''}${lunarMonthStr[month - 1]}月`;
+    if (date <= 10) {
+        return `${monthStr}初${nubmerStr[date - 1]}`;
+    } else if (date < 20) {
+        return `${monthStr}十${nubmerStr[date - 11]}`;
+    } else if (date == 20) {
+        return `${monthStr}廿十`;
+    } else if (date > 20) {
+        return `${monthStr}廿${nubmerStr[date - 21]}`;
+    } else {
+        return `${monthStr}三十`;
+    }
+}
+
+function getLunar(year, month, date) {
+    year = Math.floor(+year);
+    month = Math.floor(+month);
+    date = Math.floor(+date);
+    checkDate(year, month, date);
+    let index = year - 1900;
+    let row = table[index];
+    if (isBefore(row.solarDate, { y: year, m: month, d: date })) {
+        index -= 1;
+        row = table[index];
+    }
+    if (!row) {
+        throw new Error('Invalid Date');
+    }
+    const targetDate = new Date(Date.UTC(year, month - 1, date));
+    let delta = Math.round((targetDate.getTime() - row.solarDate.obj.getTime()) / (24*60*60*1000));
+    let afterLeap = false;
+    for(let i = 0; i < row.months.length; i++) {
+        const isLeap = row.leapMonth > 0 && i == row.leapMonth;
+        if (isLeap) {
+            afterLeap = true;
+        }
+        const days = 29 + row.months[i];
+        if (delta < days) {
+            let lunarMonth = afterLeap ? i : i + 1;
+            return {
+                lunarMonth,
+                lunarDate: delta + 1,
+                isLeap,
+                lunarYear: `${heavenlyStemStr[row.heavenlyStem]}${earthlyBranchStr[row.earthlyBranch]}年`,
+                zodiac: `${zodiacStr[row.earthlyBranch]}`,
+                dateStr: getLunarStr(lunarMonth, delta + 1, isLeap)
+            };
+        } else {
+            delta -= days;
+        }
+    }
+    throw new Error(`There's something wrong!`);
+}
+
+
+
+function monthArrayIndex(row, month, isLeap) {
+    // Internal months[] array has 13 slots in a leap year (one extra for the
+    // inserted month). A normal month that comes AFTER the leap month is
+    // therefore shifted one slot to the right compared to its own number.
+    if (isLeap) {
+        if (row.leapMonth !== month) {
+            throw new Error('Este ano não tem mês intercalar ' + month);
+        }
+        return month;
+    }
+    if (row.leapMonth > 0 && month > row.leapMonth) {
+        return month;
+    }
+    return month - 1;
+}
+
+function lunarToSolar(year, month, day, isLeap) {
+    year = Math.floor(+year);
+    month = Math.floor(+month);
+    day = Math.floor(+day);
+    const row = table[year - 1900];
+    if (!row) {
+        throw new Error('Ano fora do intervalo suportado (1900-2100)');
+    }
+    const targetIndex = monthArrayIndex(row, month, isLeap);
+    const maxDay = 29 + row.months[targetIndex];
+    if (day < 1 || day > maxDay) {
+        throw new Error('Dia inválido para este mês lunar (max ' + maxDay + ')');
+    }
+    let offset = 0;
+    for (let i = 0; i < targetIndex; i++) {
+        offset += 29 + row.months[i];
+    }
+    offset += (day - 1);
+    const base = row.solarDate.obj;
+    const result = new Date(base.getTime() + offset * 24 * 60 * 60 * 1000);
+    return {
+        year: result.getUTCFullYear(),
+        month: result.getUTCMonth() + 1,
+        day: result.getUTCDate()
+    };
+}
+
+function getYearMeta(year) {
+    const row = table[year - 1900];
+    if (!row) return null;
+    return {
+        leapMonth: row.leapMonth,
+        heavenlyStem: row.heavenlyStem,
+        earthlyBranch: row.earthlyBranch,
+        zodiac: zodiacStr[row.earthlyBranch],
+        ganzhi: `${heavenlyStemStr[row.heavenlyStem]}${earthlyBranchStr[row.earthlyBranch]}`,
+        daysInMonth: (m, leap) => {
+            const idx = monthArrayIndex(row, m, leap);
+            return 29 + row.months[idx];
+        }
+    };
+}
+
+
+/* =================== END CONVERSION CORE ==================== */
+
+/* ===================== APP UI LOGIC ===================== */
+const ZODIAC_PT = ['Rato','Boi','Tigre','Coelho','Dragão','Serpente','Cavalo','Cabra','Macaco','Galo','Cachorro','Porco'];
+const ELEMENT_PT = ['Madeira','Madeira','Fogo','Fogo','Terra','Terra','Metal','Metal','Água','Água'];
+const STEM_PINYIN = ['Jiǎ','Yǐ','Bǐng','Dīng','Wù','Jǐ','Gēng','Xīn','Rén','Guǐ'];
+const BRANCH_PINYIN = ['Zǐ','Chǒu','Yín','Mǎo','Chén','Sì','Wǔ','Wèi','Shēn','Yǒu','Xū','Hài'];
+const WEEKDAYS_PT = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+const MONTHS_PT = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+function ganzhiLabel(stemIdx, branchIdx){
+  const animal = ZODIAC_PT[branchIdx];
+  const element = ELEMENT_PT[stemIdx];
+  const chars = heavenlyStemStr[stemIdx] + earthlyBranchStr[branchIdx];
+  const pinyin = STEM_PINYIN[stemIdx] + ' ' + BRANCH_PINYIN[branchIdx];
+  return { animal, element, chars, pinyin, full: `${animal} de ${element}` };
+}
+
+function formatGregorian(y,m,d){
+  const dt = new Date(Date.UTC(y, m-1, d));
+  const weekday = WEEKDAYS_PT[dt.getUTCDay()];
+  return { weekday, text: `${d} de ${MONTHS_PT[m-1]} de ${y}`, weekdayCap: weekday.charAt(0).toUpperCase()+weekday.slice(1) };
+}
+
+function lunarMonthLabel(m, isLeap){
+  return (isLeap ? 'mês intercalar ' : '') + m + 'º mês lunar';
+}
+
+/* ---- today strip ---- */
+(function renderToday(){
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth()+1, d = now.getDate();
+  try{
+    const lunar = getLunar(y,m,d);
+    const g = ganzhiLabel(
+      heavenlyStemStr.indexOf(lunar.lunarYear[0]),
+      earthlyBranchStr.indexOf(lunar.lunarYear[1])
+    );
+    document.getElementById('todayStrip').innerHTML =
+      `Hoje: <b>${formatGregorian(y,m,d).text}</b> <span class="sep">·</span> `+
+      `<b>${lunarMonthLabel(lunar.lunarMonth, lunar.isLeap)}, dia ${lunar.lunarDate}</b> `+
+      `— Ano do ${g.full} (${g.chars})`;
+  }catch(e){
+    document.getElementById('todayStrip').textContent = formatGregorian(y,m,d).text;
+  }
+})();
+
+/* ---- mode state ---- */
+let mode = 'gtoc'; // 'gtoc' | 'ctog'
+const modeGtoC = document.getElementById('modeGtoC');
+const modeCtoG = document.getElementById('modeCtoG');
+const sunInputs = document.getElementById('sunInputs');
+const sunOutput = document.getElementById('sunOutput');
+const moonInputs = document.getElementById('moonInputs');
+const moonOutput = document.getElementById('moonOutput');
+
+function todayISO(){
+  const n = new Date();
+  const mm = String(n.getMonth()+1).padStart(2,'0');
+  const dd = String(n.getDate()).padStart(2,'0');
+  return `${n.getFullYear()}-${mm}-${dd}`;
+}
+
+function buildYearOptions(selectedYear){
+  let opts = '';
+  for(let y=2100; y>=1901; y--){
+    opts += `<option value="${y}" ${y===selectedYear?'selected':''}>${y}</option>`;
+  }
+  return opts;
+}
+
+function renderMode(){
+  if(mode === 'gtoc'){
+    modeGtoC.classList.add('active'); modeCtoG.classList.remove('active');
+    sunInputs.innerHTML = `
+      <label for="gDateInput">Escolha uma data</label>
+      <input type="date" id="gDateInput" min="1901-01-01" max="2100-12-31" value="${todayISO()}">
+    `;
+    sunOutput.innerHTML = '';
+    moonInputs.innerHTML = '';
+    document.getElementById('gDateInput').addEventListener('input', computeGtoC);
+    computeGtoC();
+  } else {
+    modeCtoG.classList.add('active'); modeGtoC.classList.remove('active');
+    const now = new Date();
+    moonInputs.innerHTML = `
+      <label for="cYear">Ano (referência gregoriana do ciclo lunar)</label>
+      <select id="cYear">${buildYearOptions(now.getFullYear())}</select>
+      <label for="cMonth">Mês lunar</label>
+      <select id="cMonth"></select>
+      <label for="cDay">Dia lunar</label>
+      <select id="cDay"></select>
+      <div class="checkbox-row">
+        <input type="checkbox" id="cLeap"> <label style="margin:0" for="cLeap">É o mês intercalar deste ano</label>
+      </div>
+    `;
+    moonOutput.innerHTML = '';
+    sunInputs.innerHTML = '';
+    document.getElementById('cYear').addEventListener('change', ()=>{ refreshMonthOptions(); computeCtoG(); });
+    document.getElementById('cMonth').addEventListener('change', ()=>{ refreshDayOptions(); computeCtoG(); });
+    document.getElementById('cDay').addEventListener('change', computeCtoG);
+    document.getElementById('cLeap').addEventListener('change', ()=>{ refreshDayOptions(); computeCtoG(); });
+    refreshMonthOptions();
+    computeCtoG();
+  }
+}
+
+function refreshMonthOptions(){
+  const year = parseInt(document.getElementById('cYear').value, 10);
+  const meta = getYearMeta(year);
+  const monthSel = document.getElementById('cMonth');
+  const leapCheckbox = document.getElementById('cLeap');
+  const prevMonth = monthSel.value ? parseInt(monthSel.value,10) : 1;
+  let opts = '';
+  for(let m=1;m<=12;m++){
+    opts += `<option value="${m}" ${m===prevMonth?'selected':''}>${m}º mês</option>`;
+  }
+  monthSel.innerHTML = opts;
+  if(meta.leapMonth > 0){
+    leapCheckbox.disabled = false;
+  } else {
+    leapCheckbox.disabled = true;
+    leapCheckbox.checked = false;
+  }
+  refreshDayOptions();
+}
+
+function refreshDayOptions(){
+  const year = parseInt(document.getElementById('cYear').value, 10);
+  const month = parseInt(document.getElementById('cMonth').value, 10);
+  const isLeap = document.getElementById('cLeap').checked;
+  const meta = getYearMeta(year);
+  const daySel = document.getElementById('cDay');
+
+  if(isLeap && meta.leapMonth !== month){
+    document.getElementById('cLeap').checked = false;
+  }
+  const effectiveLeap = document.getElementById('cLeap').checked;
+  const maxDay = meta.daysInMonth(month, effectiveLeap);
+  const prevDay = daySel.value ? parseInt(daySel.value,10) : 1;
+  let opts = '';
+  for(let d=1; d<=maxDay; d++){
+    opts += `<option value="${d}" ${d===prevDay?'selected':''}>${d}</option>`;
+  }
+  daySel.innerHTML = opts;
+}
+
+function computeGtoC(){
+  const val = document.getElementById('gDateInput').value;
+  if(!val){ return; }
+  const [y,m,d] = val.split('-').map(Number);
+  const g = formatGregorian(y,m,d);
+  sunOutput.innerHTML = `
+    <div class="result-big">${g.text}</div>
+    <div class="result-sub"><span class="weekday">${g.weekdayCap}</span></div>
+  `;
+  try{
+    const lunar = getLunar(y,m,d);
+    const stemIdx = heavenlyStemStr.indexOf(lunar.lunarYear[0]);
+    const branchIdx = earthlyBranchStr.indexOf(lunar.lunarYear[1]);
+    const gz = ganzhiLabel(stemIdx, branchIdx);
+    moonOutput.innerHTML = `
+      <div class="result-big">${lunarMonthLabel(lunar.lunarMonth, lunar.isLeap)}</div>
+      <div class="result-sub">Dia ${lunar.lunarDate} do mês lunar</div>
+      <div class="zodiac-row">
+        <span class="zodiac-badge">Ano do ${gz.full}</span>
+      </div>
+      <div class="ganzhi-note">${gz.chars} (${gz.pinyin}) — ciclo sexagenário chinês</div>
+    `;
+  }catch(e){
+    moonOutput.innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+function computeCtoG(){
+  const year = parseInt(document.getElementById('cYear').value, 10);
+  const month = parseInt(document.getElementById('cMonth').value, 10);
+  const day = parseInt(document.getElementById('cDay').value, 10);
+  const isLeap = document.getElementById('cLeap').checked;
+  const meta = getYearMeta(year);
+  const stemLabel = ganzhiLabel(meta.heavenlyStem, meta.earthlyBranch);
+
+  moonOutput.innerHTML = `
+    <div class="result-big">${lunarMonthLabel(month, isLeap)}, dia ${day}</div>
+    <div class="zodiac-row">
+      <span class="zodiac-badge">Ano do ${stemLabel.full}</span>
+    </div>
+    <div class="ganzhi-note">${stemLabel.chars} (${stemLabel.pinyin})</div>
+  `;
+  try{
+    const solar = lunarToSolar(year, month, day, isLeap);
+    const g = formatGregorian(solar.year, solar.month, solar.day);
+    sunOutput.innerHTML = `
+      <div class="result-big">${g.text}</div>
+      <div class="result-sub"><span class="weekday">${g.weekdayCap}</span></div>
+    `;
+  }catch(e){
+    sunOutput.innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+modeGtoC.addEventListener('click', ()=>{ mode='gtoc'; renderMode(); });
+modeCtoG.addEventListener('click', ()=>{ mode='ctog'; renderMode(); });
+
+renderMode();
+
+/* ===================== SPECIAL DATES / FESTIVALS ===================== */
+const FESTIVALS = [
+  { name: 'Ano Novo Chinês (Festa da Primavera)', month: 1, day: 1, note: 'Início do ano lunar. A maior celebração do calendário chinês, com reuniões de família e fogos de artifício.' },
+  { name: 'Festival das Lanternas', month: 1, day: 15, note: 'Marca o fim das celebrações de Ano Novo, com desfiles de lanternas e a primeira lua cheia do ano.' },
+  { name: 'Festival do Barco-Dragão (Duanwu)', month: 5, day: 5, note: 'Conhecido pelas corridas de barco-dragão e pelo zongzi, bolinho de arroz envolto em folhas de bambu.' },
+  { name: 'Qixi (Dia dos Namorados chinês)', month: 7, day: 7, note: 'Celebra a lenda do Boiadeiro e a Tecelã, que só podem se encontrar uma vez por ano.' },
+  { name: 'Festival do Meio-Outono (Festival da Lua)', month: 8, day: 15, note: 'Celebra a lua cheia do outono com bolos lunares (mooncakes) e reuniões de família.' },
+  { name: 'Festival do Duplo Nove (Chongyang)', month: 9, day: 9, note: 'Tradicionalmente associado a caminhadas em locais altos e homenagens aos mais velhos.' },
+  { name: 'Festival Laba', month: 12, day: 8, note: 'Marca a proximidade do Ano Novo Chinês com um mingau tradicional feito de grãos e frutas secas.' }
+];
+
+function buildFestivalYearOptions(){
+  let opts = '';
+  const current = new Date().getFullYear();
+  for(let y=2100; y>=1901; y--){
+    opts += `<option value="${y}" ${y===current?'selected':''}>${y}</option>`;
+  }
+  return opts;
+}
+
+function renderFestivals(){
+  const year = parseInt(document.getElementById('festYear').value, 10);
+  const grid = document.getElementById('festivalGrid');
+  grid.innerHTML = FESTIVALS.map(f => {
+    let dateHtml, noteExtra = '';
+    try{
+      const solar = lunarToSolar(year, f.month, f.day, false);
+      const g = formatGregorian(solar.year, solar.month, solar.day);
+      dateHtml = `${g.text} <span style="color:var(--muted); font-weight:400;">(${g.weekday})</span>`;
+    }catch(e){
+      dateHtml = 'indisponível para este ano';
+    }
+    return `
+      <div class="festival-card">
+        <div class="fname">${f.name}</div>
+        <div class="flunar">${f.month}º mês lunar, dia ${f.day}</div>
+        <div class="fdate">${dateHtml}</div>
+        <div class="fnote">${f.note}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+document.getElementById('festYear').innerHTML = buildFestivalYearOptions();
+document.getElementById('festYear').addEventListener('change', renderFestivals);
+renderFestivals();
+</script>
+</body>
+</html>
