@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title id="pageTitle">Dois Calendários</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="favicon.ico">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
   :root{
     --ink: #12182B;
@@ -150,7 +153,17 @@
     color: var(--paper); padding: 10px 12px; border-radius: 8px; font-size: 15px;
     font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
   }
-  input[type="date"]{ color-scheme: dark; }
+  input[type="date"]{
+    color-scheme: dark;
+    -webkit-appearance: none; appearance: none;
+    padding-right: 16px;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator{
+    margin-left: 8px; padding-right: 2px;
+  }
+  input[type="date"]::-webkit-date-and-time-value{
+    text-align: left;
+  }
   select:disabled{ opacity: 0.35; }
 
   .checkbox-row{
@@ -276,6 +289,9 @@
   .lunar-card-wrap{
     max-width: 320px; margin: 22px auto 0;
   }
+  @media (max-width: 640px){
+    .lunar-card-wrap{ max-width: 100%; }
+  }
   .lunar-card{
     border: 1px solid var(--line); border-radius: 14px;
     overflow: hidden; background: var(--ink-2);
@@ -313,6 +329,11 @@
   .lc-ji .lc-tag-label{ color: var(--moon); }
   .lc-tag-gloss{ font-size: 10px; font-weight: 400; color: var(--muted); }
   .lc-tag-items{ font-size: 11.5px; color: var(--paper); opacity: 0.85; }
+  .lc-term{ margin-bottom: 4px; line-height: 1.3; }
+  .lc-term:last-child{ margin-bottom: 0; }
+  .lc-hanzi{ font-weight: 600; }
+  .lc-term-pinyin{ font-style: italic; color: var(--muted); margin-left: 4px; font-size: 10.5px; }
+  .lc-term-gloss{ display: block; font-size: 10px; color: var(--muted); margin-top: 1px; }
 
   select option{
     color: #12182B;
@@ -638,6 +659,15 @@ const I18N = {
     jiGloss: 'evitar',
     continuousYear: (n) => `Ano ${n} da era contínua chinesa (calendário do Imperador Amarelo)`,
     continuousYearShort: (n) => `Ano chinês ${n}`,
+    yiItems: [
+      { hanzi: '祭祀', pinyin: 'jìsì', gloss: 'rituais e oferendas' },
+      { hanzi: '出行', pinyin: 'chūxíng', gloss: 'viagens' },
+      { hanzi: '祈福', pinyin: 'qífú', gloss: 'pedir bênçãos' }
+    ],
+    jiItems: [
+      { hanzi: '动土', pinyin: 'dòngtǔ', gloss: 'mexer na terra, obras' },
+      { hanzi: '嫁娶', pinyin: 'jiàqǔ', gloss: 'casamentos' }
+    ],
     weekdays: ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'],
     months: ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'],
     dateFmt: (d, monthName, y) => `${d} de ${monthName} de ${y}`,
@@ -672,7 +702,8 @@ const I18N = {
       { title: 'Por que existe o mês intercalar?', body: '12 meses lunares somam cerca de 354 dias — 11 a menos que o ano solar. Sem correção, em poucos anos o Ano Novo Chinês cairia no meio do verão. Para evitar isso, a cada 2 ou 3 anos um mês extra é inserido (o "mês intercalar"), criando um ano de 13 meses que realinha o calendário com as estações.' },
       { title: 'Qual mês vira o intercalar?', body: 'Não é sempre o mesmo: o mês extra é o primeiro, dentro daquele ano lunar, que não contém nenhum dos 12 "termos solares principais" (pontos fixos do ano solar, como solstícios e equinócios). Por isso 2017 teve um 6º mês duplicado, 2020 um 4º mês duplicado e 2023 um 2º mês duplicado.' },
       { title: 'Um mês lunar = uma lua', body: 'Cada mês começa exatamente na lua nova (calculada para o horário de Pequim) e dura 29 ou 30 dias — nunca 28 ou 31, como no gregoriano. É por isso que a lua está sempre cheia por volta do 15º dia do mês lunar, todo mês.' },
-      { title: 'Uso hoje em dia', body: 'Desde 1912 a China usa oficialmente o calendário gregoriano para datas civis, negócios e a vida cotidiana. O calendário lunissolar tradicional continua vivo para fixar festivais, feriados, o zodíaco e, em muitas famílias, datas de aniversários e casamentos.' }
+      { title: 'Uso hoje em dia', body: 'Desde 1912 a China usa oficialmente o calendário gregoriano para datas civis, negócios e a vida cotidiana. O calendário lunissolar tradicional continua vivo para fixar festivais, feriados, o zodíaco e, em muitas famílias, datas de aniversários e casamentos.' },
+      { title: 'O que significam 宜 e 忌?', body: 'É o coração da "folhinha" tradicional chinesa (老黄历): para cada dia, o calendário lista atividades consideradas favoráveis (宜, yí) e outras a evitar (忌, jì) — coisas como viagens, casamentos ou início de obras. A lógica por trás disso vem da astrologia tradicional chinesa (combinando o dia, o mês e outros fatores) e é seguida por tradição cultural, sem base científica comprovada.' }
     ]
   },
 
@@ -702,6 +733,15 @@ const I18N = {
     jiGloss: 'avoid',
     continuousYear: (n) => `Year ${n} of the continuous Chinese era (Yellow Emperor calendar)`,
     continuousYearShort: (n) => `Chinese year ${n}`,
+    yiItems: [
+      { hanzi: '祭祀', pinyin: 'jìsì', gloss: 'worship & offerings' },
+      { hanzi: '出行', pinyin: 'chūxíng', gloss: 'traveling' },
+      { hanzi: '祈福', pinyin: 'qífú', gloss: 'praying for blessings' }
+    ],
+    jiItems: [
+      { hanzi: '动土', pinyin: 'dòngtǔ', gloss: 'breaking ground' },
+      { hanzi: '嫁娶', pinyin: 'jiàqǔ', gloss: 'getting married' }
+    ],
     weekdays: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
     months: ['January','February','March','April','May','June','July','August','September','October','November','December'],
     dateFmt: (d, monthName, y) => `${monthName} ${d}, ${y}`,
@@ -736,7 +776,8 @@ const I18N = {
       { title: 'Why is there a leap month?', body: "12 lunar months add up to about 354 days — 11 short of the solar year. Without correction, within a few years Chinese New Year would fall in the middle of summer. To prevent that, every 2–3 years an extra month is inserted (the \"leap month\"), creating a 13-month year that realigns the calendar with the seasons." },
       { title: 'Which month becomes the leap month?', body: 'It isn\'t always the same one: the extra month is the first one, within that lunar year, that doesn\'t contain any of the 12 "principal solar terms" (fixed points of the solar year, like solstices and equinoxes). That\'s why 2017 had a duplicated 6th month, 2020 a duplicated 4th month, and 2023 a duplicated 2nd month.' },
       { title: 'One lunar month = one moon', body: 'Each month begins exactly on the new moon (calculated for Beijing time) and lasts 29 or 30 days — never 28 or 31 like in the Gregorian calendar. That\'s why the moon is always full around the 15th day of the lunar month, every month.' },
-      { title: 'How it\'s used today', body: 'Since 1912, China has officially used the Gregorian calendar for civil dates, business, and daily life. The traditional lunisolar calendar remains very much alive for fixing festivals, holidays, the zodiac, and — in many families — birthdays and wedding dates.' }
+      { title: 'How it\'s used today', body: 'Since 1912, China has officially used the Gregorian calendar for civil dates, business, and daily life. The traditional lunisolar calendar remains very much alive for fixing festivals, holidays, the zodiac, and — in many families — birthdays and wedding dates.' },
+      { title: 'What do 宜 and 忌 mean?', body: 'They\'re the heart of the traditional Chinese "tear-off calendar" (老黄历): for each day, it lists activities considered favorable (宜, yí) and others to avoid (忌, jì) — things like traveling, getting married, or breaking ground for construction. The logic behind it comes from traditional Chinese astrology (combining the day, the month, and other factors) and is followed as cultural tradition, without established scientific basis.' }
     ]
   },
 
@@ -766,6 +807,15 @@ const I18N = {
     jiGloss: '',
     continuousYear: (n) => `黄帝纪年${n}年`,
     continuousYearShort: (n) => `黄帝纪年${n}年`,
+    yiItems: [
+      { hanzi: '祭祀', pinyin: 'jìsì', gloss: '' },
+      { hanzi: '出行', pinyin: 'chūxíng', gloss: '' },
+      { hanzi: '祈福', pinyin: 'qífú', gloss: '' }
+    ],
+    jiItems: [
+      { hanzi: '动土', pinyin: 'dòngtǔ', gloss: '' },
+      { hanzi: '嫁娶', pinyin: 'jiàqǔ', gloss: '' }
+    ],
     weekdays: ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'],
     months: ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'],
     dateFmt: (d, monthName, y) => `${y}年${monthName}${d}日`,
@@ -800,7 +850,8 @@ const I18N = {
       { title: '为什么会有闰月', body: '12个农历月加起来大约有354天，比阳历年少了约11天。如果不做调整，几年后春节就会移到盛夏时节。为了解决这个问题，每2到3年会插入一个额外的月份（"闰月"），形成13个月的一年，使农历重新与季节对齐。' },
       { title: '哪个月会成为闰月', body: '并不固定：农历年中第一个不含"中气"（即12个主要节气之一，如二至二分）的月份就会成为闰月。这就是为什么2017年有闰六月，2020年有闰四月，2023年有闰二月。' },
       { title: '一个农历月 = 一个月相周期', body: '每个农历月都从朔（新月，以北京时间计算）开始，长度为29天或30天，从不是28天或31天。这也是为什么每月十五前后总是满月。' },
-      { title: '如今的使用情况', body: '自1912年起，中国官方在民用日期、商务和日常生活中使用公历。而传统农历依然活跃，用于确定节日、假期、生肖，以及许多家庭的生日和婚嫁吉日。' }
+      { title: '如今的使用情况', body: '自1912年起，中国官方在民用日期、商务和日常生活中使用公历。而传统农历依然活跃，用于确定节日、假期、生肖，以及许多家庭的生日和婚嫁吉日。' },
+      { title: '"宜"与"忌"是什么意思？', body: '这是传统"老黄历"的核心内容：每一天都会列出被认为适宜（宜）进行的事项，以及应当避免（忌）的事项，比如出行、嫁娶或动土。这套逻辑源自传统命理学（结合日期、月份等多种因素），属于文化传统的一部分，并无科学依据。' }
     ]
   }
 
@@ -900,6 +951,15 @@ function continuousYearNum(lunarYearNum){
   return lunarYearNum + 2697;
 }
 
+function termListHtml(items){
+  return items.map(it => `
+    <div class="lc-term">
+      <span class="lc-hanzi">${it.hanzi}</span>${currentLang === 'zh' ? '' : `<span class="lc-term-pinyin">${it.pinyin}</span>`}
+      ${it.gloss ? `<span class="lc-term-gloss">${it.gloss}</span>` : ''}
+    </div>
+  `).join('');
+}
+
 function tearOffCalendarCard(month, day, isLeap, gz, gregorianText, weekday, lunarYearNum){
   const yiGloss = L.yiGloss ? `<span class="lc-tag-gloss">(${L.yiGloss})</span>` : '';
   const jiGloss = L.jiGloss ? `<span class="lc-tag-gloss">(${L.jiGloss})</span>` : '';
@@ -917,11 +977,11 @@ function tearOffCalendarCard(month, day, isLeap, gz, gregorianText, weekday, lun
       <div class="lc-tags">
         <div class="lc-tag-col lc-yi">
           <div class="lc-tag-label">宜${yiGloss}</div>
-          <div class="lc-tag-items">祭祀 · 出行 · 祈福</div>
+          <div class="lc-tag-items">${termListHtml(L.yiItems)}</div>
         </div>
         <div class="lc-tag-col lc-ji">
           <div class="lc-tag-label">忌${jiGloss}</div>
-          <div class="lc-tag-items">动土 · 嫁娶</div>
+          <div class="lc-tag-items">${termListHtml(L.jiItems)}</div>
         </div>
       </div>
     </div>
